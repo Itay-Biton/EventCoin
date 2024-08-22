@@ -29,6 +29,8 @@ contract EventManager {
         address owner;
         Task[] tasks;
         Company[] companies;
+        uint256 totalTickets;
+        uint256 ticketsSold;
         mapping(address => bool) hasTicket;
     }
 
@@ -106,10 +108,11 @@ contract EventManager {
         uint256 _seat
     ) public payable {
         Event storage eventInstance = events[_eventId];
+        require(eventInstance.ticketsSold < eventInstance.totalTickets, "Out of tickets.");
         require(!eventInstance.hasTicket[msg.sender], "Ticket already purchased.");
         require(msg.value == eventInstance.ticketPrice, "Incorrect ticket price.");
 
-        uint256 tokenId = ticketNFT.mint(
+        ticketNFT.mint(
             msg.sender, 
             eventInstance.name, 
             eventInstance.details, 
@@ -117,6 +120,7 @@ contract EventManager {
             _row, 
             _seat
         );
+        eventInstance.ticketsSold++;
         eventInstance.cashBank += msg.value;
         eventInstance.hasTicket[msg.sender] = true;
     }
