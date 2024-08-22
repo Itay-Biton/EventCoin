@@ -11,7 +11,6 @@ contract TicketNFT is ERC721URIStorage, Ownable {
         string eventName;
         string eventDetails;
         uint256 eventDate;
-        uint256 row;
         uint256 seat;
     }
 
@@ -20,56 +19,48 @@ contract TicketNFT is ERC721URIStorage, Ownable {
     constructor() ERC721("Event Ticket", "ETKT") {}
 
     function mint(
-        address to, 
-        string memory _eventName, 
-        string memory _eventDetails, 
+        address to,
+        string memory _eventName,
+        string memory _eventDetails,
         uint256 _eventDate,
-        uint256 _row, 
         uint256 _seat
     ) external onlyOwner returns (uint256) {
         uint256 tokenId = nextTokenId;
         _safeMint(to, tokenId);
-        
         ticketDetails[tokenId] = TicketDetails({
             eventName: _eventName,
             eventDetails: _eventDetails,
             eventDate: _eventDate,
-            row: _row,
             seat: _seat
         });
 
         // Generate tokenURI
         string memory tokenURI = _generateTokenURI(
-            _eventName, 
-            _eventDetails, 
-            _eventDate, 
-            _row, 
+            _eventName,
+            _eventDetails,
+            _eventDate,
             _seat
         );
         _setTokenURI(tokenId, tokenURI);
-
         nextTokenId++;
         return tokenId;
     }
 
     function _generateTokenURI(
-        string memory _eventName, 
-        string memory _eventDetails, 
+        string memory _eventName,
+        string memory _eventDetails,
         uint256 _eventDate,
-        uint256 _row, 
         uint256 _seat
     ) internal pure returns (string memory) {
-        // A basic example of encoding JSON metadata as a string
         return string(abi.encodePacked(
             '{"name":"', _eventName, '",',
             '"description":"', _eventDetails, '",',
             '"date":', uint2str(_eventDate), ',',
-            '"row":', uint2str(_row), ',',
             '"seat":', uint2str(_seat), '}'
         ));
     }
 
-    function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
+    function uint2str(uint256 _i) internal pure returns (string memory) {
         if (_i == 0) {
             return "0";
         }

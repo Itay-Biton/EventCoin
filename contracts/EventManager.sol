@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "./TicketNFT.sol";
 
 contract EventManager {
     struct Task {
@@ -13,11 +14,13 @@ contract EventManager {
         address assignedCompany;
         uint8 ratingSum;
         uint8 ratingCount;
+        mapping(address => bool) hasRated;
     }
 
     struct Company {
         address companyAddress;
         string name;
+        bool approved;
     }
 
     struct Event {
@@ -31,7 +34,7 @@ contract EventManager {
         Company[] companies;
         uint256 totalTickets;
         uint256 ticketsSold;
-        mapping(address => bool) hasTicket;
+        mapping(uint256 => bool) seatTaken;
     }
 
     mapping(uint => Event) public events;
@@ -46,7 +49,8 @@ contract EventManager {
         string memory _name, 
         string memory _details, 
         uint256 _date, 
-        uint256 _ticketPrice
+        uint256 _ticketPrice,
+        uint256 _totalTickets
     ) public {
         eventCount++;
         Event storage newEvent = events[eventCount];
@@ -54,6 +58,8 @@ contract EventManager {
         newEvent.details = _details;
         newEvent.date = _date;
         newEvent.ticketPrice = _ticketPrice;
+        newEvent.totalTickets = _totalTickets;
+        newEvent.ticketsSold = 0;
         newEvent.owner = msg.sender;
         newEvent.cashBank = 0;
     }
@@ -86,6 +92,11 @@ contract EventManager {
         }));
     }
 
+    function getAllTasks(uint _eventId) public view returns (Task[] memory) {
+        Event storage eventInstance = events[_eventId];
+        return eventInstance.tasks;
+    }
+
     function addCompany(uint _eventId, address _companyAddress, string memory _name) public {
         Event storage eventInstance = events[_eventId];
         require(eventInstance.owner == msg.sender, "Only the event owner can add companies.");
@@ -95,21 +106,59 @@ contract EventManager {
         }));
     }
 
+    function requestToJoin(uint _eventId, string memory _name) public {
+        Event storage eventInstance = events[_eventId];
+        for (uint i = 0; i < eventInstance.companies.length; i++) {
+            require(eventInstance.companies[i].companyAddress != msg.sender, "Company already requested to join.");
+        }
+        eventInstance.companies.push(Company({
+            companyAddress: msg.sender,
+            name: _name,
+            approved: false
+        }));
+    }
+
+    function approveCompany(uint _eventId, address _companyAddress) public {
+        Event storage eventInstance = events[_eventId];
+        require(eventInstance.owner == msg.sender, "Only the event owner can approve companies.");
+        for (uint i = 0; i < eventInstance.companies.length; i++) {
+            if (eventInstance.companies[i].companyAddress == _companyAddress) {
+                eventInstance.companies[i].approved = true;
+                return;
+            }
+        }
+        revert("Company not found.");
+    }
+
+    function getAllCompanies(uint _eventId) public view returns (Company[] memory) {
+        Event storage eventInstance = events[_eventId];
+        return eventInstance.companies;
+    }
+
     function assignCompanyToTask(uint _eventId, uint _taskId, address _companyAddress) public {
         Event storage eventInstance = events[_eventId];
         require(eventInstance.owner == msg.sender, "Only the event owner can assign companies.");
         require(!eventInstance.tasks[_taskId].completed, "Cannot assign a company to a completed task.");
+        bool companyApproved = false;
+        for (uint i = 0; i < eventInstance.companies.length; i++) {
+            if (eventInstance.companies[i].companyAddress == _companyAddress && eventInstance.companies[i].approved) {
+                companyApproved = true;
+                break;
+            }
+        }
+        require(companyApproved, "Company is not approved for this event.");
+        
         eventInstance.tasks[_taskId].assignedCompany = _companyAddress;
     }
 
     function purchaseTicket(
         uint _eventId,
-        uint256 _row, 
         uint256 _seat
     ) public payable {
         Event storage eventInstance = events[_eventId];
-        require(eventInstance.ticketsSold < eventInstance.totalTickets, "Out of tickets.");
-        require(!eventInstance.hasTicket[msg.sender], "Ticket already purchased.");
+        require(eventInstance.ticketsSold < eventInstance.totalTickets, "Event is sold out.");
+        require(!eventInstance.seatTaken[_seat], "This seat is already taken.");
+        require(_seat < eventInstance.totalTickets && _seat >= 0, "Invalid seat number.");
         require(msg.value == eventInstance.ticketPrice, "Incorrect ticket price.");
 
         ticketNFT.mint(
@@ -117,12 +166,22 @@ contract EventManager {
             eventInstance.name, 
             eventInstance.details, 
             eventInstance.date, 
-            _row, 
             _seat
         );
         eventInstance.ticketsSold++;
         eventInstance.cashBank += msg.value;
-        eventInstance.hasTicket[msg.sender] = true;
+        eventInstance.seatTaken[_seat] = true;
+    }
+
+    function getSeatAvailability(uint _eventId) public view returns (bool[] memory) {
+        Event storage eventInstance = events[_eventId];
+        bool[] memory availability = new bool[](eventInstance.maxSeats);
+        
+        for (uint256 i = 0; i < eventInstance.maxSeats; i++) {
+            availability[i] = !eventInstance.seatTaken[i];
+        }
+        
+        return availability;
     }
 
     function completeTask(uint _eventId, uint _taskId) public {
@@ -143,8 +202,10 @@ contract EventManager {
             }
         }
         require(isCompanyInEvent, "Only companies in the event can rate tasks.");
+        require(!eventInstance.tasks[_taskId].hasRated[msg.sender], "Your company has already rated this task.");
         eventInstance.tasks[_taskId].ratingSum += _rating;
         eventInstance.tasks[_taskId].ratingCount++;
+        eventInstance.tasks[_taskId].hasRated[msg.sender] = true;
     }
 
     function finalizeEvent(uint _eventId) public {
