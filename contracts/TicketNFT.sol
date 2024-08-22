@@ -16,7 +16,7 @@ contract TicketNFT is ERC721URIStorage, Ownable {
 
     mapping(uint256 => TicketDetails) public ticketDetails;
 
-    constructor() ERC721("Event Ticket", "ETKT") {}
+    constructor(address _initialOwner) ERC721("Event Ticket", "ETKT") Ownable(_initialOwner) {}
 
     function mint(
         address to,

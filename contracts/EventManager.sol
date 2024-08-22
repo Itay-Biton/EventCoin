@@ -12,9 +12,12 @@ contract EventManager {
         uint8 minRating;
         bool completed;
         address assignedCompany;
-        uint8 ratingSum;
-        uint8 ratingCount;
-        mapping(address => bool) hasRated;
+        Rating[] ratings;
+    }
+
+    struct Rating {
+        address rater;
+        uint8 rating;
     }
 
     struct Company {
@@ -87,8 +90,7 @@ contract EventManager {
             minRating: _minRating,
             completed: false,
             assignedCompany: address(0),
-            ratingSum: 0,
-            ratingCount: 0
+            ratings: []
         }));
     }
 
@@ -102,7 +104,8 @@ contract EventManager {
         require(eventInstance.owner == msg.sender, "Only the event owner can add companies.");
         eventInstance.companies.push(Company({
             companyAddress: _companyAddress,
-            name: _name
+            name: _name,
+            approved: true
         }));
     }
 
@@ -175,9 +178,9 @@ contract EventManager {
 
     function getSeatAvailability(uint _eventId) public view returns (bool[] memory) {
         Event storage eventInstance = events[_eventId];
-        bool[] memory availability = new bool[](eventInstance.maxSeats);
+        bool[] memory availability = new bool[](eventInstance.totalTickets);
         
-        for (uint256 i = 0; i < eventInstance.maxSeats; i++) {
+        for (uint256 i = 0; i < eventInstance.totalTickets; i++) {
             availability[i] = !eventInstance.seatTaken[i];
         }
         
@@ -202,10 +205,18 @@ contract EventManager {
             }
         }
         require(isCompanyInEvent, "Only companies in the event can rate tasks.");
-        require(!eventInstance.tasks[_taskId].hasRated[msg.sender], "Your company has already rated this task.");
-        eventInstance.tasks[_taskId].ratingSum += _rating;
-        eventInstance.tasks[_taskId].ratingCount++;
-        eventInstance.tasks[_taskId].hasRated[msg.sender] = true;
+        bool thisCompanyAlreadyRated = false;
+        for (uint i = 0; i < eventInstance.tasks[_taskId].ratings.length; i++) {
+            if (eventInstance.tasks[_taskId].ratings[i].rater == msg.sender) {
+                thisCompanyAlreadyRated = true;
+                break;
+            }
+        }
+        require(!thisCompanyAlreadyRated, "Your company has already rated this task.");
+        eventInstance.tasks[_taskId].ratings.push(Rating({
+            rater: msg.sender,
+            rating: _rating
+        }));
     }
 
     function finalizeEvent(uint _eventId) public {
@@ -216,7 +227,7 @@ contract EventManager {
         for (uint i = 0; i < eventInstance.tasks.length; i++) {
             Task storage task = eventInstance.tasks[i];
             if (task.completed) {
-                uint8 averageRating = task.ratingSum / task.ratingCount;
+                uint8 averageRating = calculateAverageRating(_eventId, i);
                 if (averageRating >= task.minRating) {
                     payable(task.assignedCompany).transfer(task.reward);
                     eventInstance.cashBank -= task.reward;
@@ -225,5 +236,17 @@ contract EventManager {
         }
 
         payable(eventInstance.owner).transfer(eventInstance.cashBank);
+    }
+
+    function calculateAverageRating(uint _eventId, uint _taskId) public view returns (uint8) {
+        Event storage eventInstance = events[_eventId];
+        uint256 totalRatings = eventInstance.tasks[_taskId].ratings.length;
+        uint256 ratingSum = 0;
+
+        for (uint i = 0; i < totalRatings; i++) {
+            ratingSum += eventInstance.tasks[_taskId].ratings[i].rating;
+        }
+
+        return uint8(ratingSum / totalRatings);
     }
 }
