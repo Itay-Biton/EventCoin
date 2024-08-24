@@ -12,12 +12,8 @@ contract EventManager {
         uint8 minRating;
         bool completed;
         address assignedCompany;
-        Rating[] ratings;
-    }
-
-    struct Rating {
-        address rater;
-        uint8 rating;
+        address[] raters;
+        uint8[] ratings;
     }
 
     struct Company {
@@ -83,15 +79,17 @@ contract EventManager {
         Event storage eventInstance = events[_eventId];
         require(eventInstance.owner == msg.sender, "Only the event owner can create tasks.");
         require(eventInstance.cashBank >= _reward, "Not enough money in the cash bank.");
-        eventInstance.tasks.push(Task({
+        Task memory newTask = Task({
             name: _name,
             details: _details,
             reward: _reward,
             minRating: _minRating,
             completed: false,
             assignedCompany: address(0),
-            ratings: []
-        }));
+            raters: new address[](0),
+            ratings: new uint8[](0)
+        });
+        eventInstance.tasks.push(newTask);
     }
 
     function getAllTasks(uint _eventId) public view returns (Task[] memory) {
@@ -206,17 +204,15 @@ contract EventManager {
         }
         require(isCompanyInEvent, "Only companies in the event can rate tasks.");
         bool thisCompanyAlreadyRated = false;
-        for (uint i = 0; i < eventInstance.tasks[_taskId].ratings.length; i++) {
-            if (eventInstance.tasks[_taskId].ratings[i].rater == msg.sender) {
+        for (uint i = 0; i < eventInstance.tasks[_taskId].raters.length; i++) {
+            if (eventInstance.tasks[_taskId].raters[i] == msg.sender) {
                 thisCompanyAlreadyRated = true;
                 break;
             }
         }
         require(!thisCompanyAlreadyRated, "Your company has already rated this task.");
-        eventInstance.tasks[_taskId].ratings.push(Rating({
-            rater: msg.sender,
-            rating: _rating
-        }));
+        eventInstance.tasks[_taskId].raters.push(msg.sender);
+        eventInstance.tasks[_taskId].ratings.push(_rating);
     }
 
     function finalizeEvent(uint _eventId) public {
@@ -240,13 +236,13 @@ contract EventManager {
 
     function calculateAverageRating(uint _eventId, uint _taskId) public view returns (uint8) {
         Event storage eventInstance = events[_eventId];
-        uint256 totalRatings = eventInstance.tasks[_taskId].ratings.length;
+        uint256 numOfRatings = eventInstance.tasks[_taskId].ratings.length;
         uint256 ratingSum = 0;
 
-        for (uint i = 0; i < totalRatings; i++) {
-            ratingSum += eventInstance.tasks[_taskId].ratings[i].rating;
+        for (uint i = 0; i < numOfRatings; i++) {
+            ratingSum += eventInstance.tasks[_taskId].ratings[i];
         }
 
-        return uint8(ratingSum / totalRatings);
+        return uint8(ratingSum / numOfRatings);
     }
 }
