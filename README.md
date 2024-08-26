@@ -37,13 +37,13 @@ EventCoin is a decentralized application (dApp) for managing events using NFTs a
 ## Screenshots
 
 <p align="center">
-   <img src="./Screenshots/Screenshot1" alt="Screenshot 1" width="200"/> 
-   <img src="./Screenshots/Screenshot2" alt="Screenshot 2" width="200"/> 
-   <img src="./Screenshots/Screenshot3" alt="Screenshot 3" width="200"/> 
-   <img src="./Screenshots/Screenshot4" alt="Screenshot 4" width="200"/> 
-   <img src="./Screenshots/Screenshot5" alt="Screenshot 5" width="200"/> 
-   <img src="./Screenshots/Screenshot6" alt="Screenshot 6" width="200"/> 
-   <img src="./Screenshots/Screenshot7" alt="Screenshot 7" width="200"/> 
+   <img src="./Screenshots/Screenshot1.png" alt="Screenshot 1" width="200"/> 
+   <img src="./Screenshots/Screenshot2.png" alt="Screenshot 2" width="200"/> 
+   <img src="./Screenshots/Screenshot3.png" alt="Screenshot 3" width="200"/> 
+   <img src="./Screenshots/Screenshot4.png" alt="Screenshot 4" width="200"/> 
+   <img src="./Screenshots/Screenshot5.png" alt="Screenshot 5" width="200"/> 
+   <img src="./Screenshots/Screenshot6.png" alt="Screenshot 6" width="200"/> 
+   <img src="./Screenshots/Screenshot7.png" alt="Screenshot 7" width="200"/> 
 </p>
 
 
