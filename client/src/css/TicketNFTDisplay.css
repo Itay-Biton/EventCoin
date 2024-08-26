@@ -1,0 +1,19 @@
+.nft-display {
+    text-align: center;
+    background-color: #f4f4f9;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+  
+.nft-display img {
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.nft-display ul {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+    list-style: none;
+}

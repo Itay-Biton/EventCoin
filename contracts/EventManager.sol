@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "./TicketNFT.sol";
 
 contract EventManager {
+    event TicketPurchased(uint256 ticketID);
+
     struct Task {
         string name;
         string details;
@@ -23,6 +25,7 @@ contract EventManager {
     }
 
     struct Event {
+        bool isFinalized;
         string name;
         string details;
         uint256 date;
@@ -31,9 +34,9 @@ contract EventManager {
         address owner;
         Task[] tasks;
         Company[] companies;
-        uint256 totalTickets;
-        uint256 ticketsSold;
-        mapping(uint256 => bool) seatTaken;
+        uint32 totalTickets;
+        uint32 ticketsSold;
+        mapping(uint32 => bool) seatTaken;
     }
 
     mapping(uint => Event) public events;
@@ -49,10 +52,11 @@ contract EventManager {
         string memory _details, 
         uint256 _date, 
         uint256 _ticketPrice,
-        uint256 _totalTickets
+        uint32 _totalTickets
     ) public {
         eventCount++;
         Event storage newEvent = events[eventCount];
+        newEvent.isFinalized = false;
         newEvent.name = _name;
         newEvent.details = _details;
         newEvent.date = _date;
@@ -65,6 +69,7 @@ contract EventManager {
 
     function addMoneyToCashBank(uint _eventId) public payable {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         require(eventInstance.owner == msg.sender, "Only the event owner can add money.");
         eventInstance.cashBank += msg.value;
     }
@@ -77,8 +82,13 @@ contract EventManager {
         uint8 _minRating
     ) public {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         require(eventInstance.owner == msg.sender, "Only the event owner can create tasks.");
-        require(eventInstance.cashBank >= _reward, "Not enough money in the cash bank.");
+        uint256 totalRewardRequired = _reward;
+        for (uint i = 0; i < eventInstance.tasks.length; i++) 
+            totalRewardRequired += eventInstance.tasks[i].reward;
+        require(eventInstance.cashBank >= totalRewardRequired, "Not enough money in the cash bank to cover all tasks.");
+
         Task memory newTask = Task({
             name: _name,
             details: _details,
@@ -99,6 +109,7 @@ contract EventManager {
 
     function addCompany(uint _eventId, address _companyAddress, string memory _name) public {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         require(eventInstance.owner == msg.sender, "Only the event owner can add companies.");
         eventInstance.companies.push(Company({
             companyAddress: _companyAddress,
@@ -109,6 +120,7 @@ contract EventManager {
 
     function requestToJoin(uint _eventId, string memory _name) public {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         for (uint i = 0; i < eventInstance.companies.length; i++) {
             require(eventInstance.companies[i].companyAddress != msg.sender, "Company already requested to join.");
         }
@@ -121,6 +133,7 @@ contract EventManager {
 
     function approveCompany(uint _eventId, address _companyAddress) public {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         require(eventInstance.owner == msg.sender, "Only the event owner can approve companies.");
         for (uint i = 0; i < eventInstance.companies.length; i++) {
             if (eventInstance.companies[i].companyAddress == _companyAddress) {
@@ -138,6 +151,7 @@ contract EventManager {
 
     function assignCompanyToTask(uint _eventId, uint _taskId, address _companyAddress) public {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         require(eventInstance.owner == msg.sender, "Only the event owner can assign companies.");
         require(!eventInstance.tasks[_taskId].completed, "Cannot assign a company to a completed task.");
         bool companyApproved = false;
@@ -154,15 +168,16 @@ contract EventManager {
 
     function purchaseTicket(
         uint _eventId,
-        uint256 _seat
+        uint32 _seat
     ) public payable {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         require(eventInstance.ticketsSold < eventInstance.totalTickets, "Event is sold out.");
         require(!eventInstance.seatTaken[_seat], "This seat is already taken.");
         require(_seat < eventInstance.totalTickets && _seat >= 0, "Invalid seat number.");
         require(msg.value == eventInstance.ticketPrice, "Incorrect ticket price.");
 
-        ticketNFT.mint(
+        uint256 ticketID = ticketNFT.mint(
             msg.sender, 
             eventInstance.name, 
             eventInstance.details, 
@@ -172,13 +187,15 @@ contract EventManager {
         eventInstance.ticketsSold++;
         eventInstance.cashBank += msg.value;
         eventInstance.seatTaken[_seat] = true;
+
+        emit TicketPurchased(ticketID);
     }
 
     function getSeatAvailability(uint _eventId) public view returns (bool[] memory) {
         Event storage eventInstance = events[_eventId];
         bool[] memory availability = new bool[](eventInstance.totalTickets);
         
-        for (uint256 i = 0; i < eventInstance.totalTickets; i++) {
+        for (uint32 i = 0; i < eventInstance.totalTickets; i++) {
             availability[i] = !eventInstance.seatTaken[i];
         }
         
@@ -187,12 +204,14 @@ contract EventManager {
 
     function completeTask(uint _eventId, uint _taskId) public {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         require(eventInstance.tasks[_taskId].assignedCompany == msg.sender, "Only the assigned company can complete the task.");
         eventInstance.tasks[_taskId].completed = true;
     }
 
     function rateTask(uint _eventId, uint _taskId, uint8 _rating) public {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         require(eventInstance.tasks[_taskId].completed, "Task must be completed to be rated.");
         require(eventInstance.tasks[_taskId].assignedCompany != msg.sender, "Executing company cannot rate their own task.");
         bool isCompanyInEvent = false;
@@ -217,9 +236,21 @@ contract EventManager {
 
     function finalizeEvent(uint _eventId) public {
         Event storage eventInstance = events[_eventId];
+        require(!eventInstance.isFinalized, "Event is already finalized");
         require(eventInstance.owner == msg.sender, "Only the event owner can finalize the event.");
         require(block.timestamp >= eventInstance.date, "Event date has not passed yet.");
-
+        uint totalRewards = 0;
+        for (uint i = 0; i < eventInstance.tasks.length; i++) {
+            Task storage task = eventInstance.tasks[i];
+            if (task.completed) {
+                uint8 averageRating = calculateAverageRating(_eventId, i);
+                if (averageRating >= task.minRating) {
+                    totalRewards += task.reward;
+                }
+            }
+        }
+        require(address(this).balance >= totalRewards + eventInstance.cashBank, "Insufficient contract balance.");
+        
         for (uint i = 0; i < eventInstance.tasks.length; i++) {
             Task storage task = eventInstance.tasks[i];
             if (task.completed) {
@@ -232,6 +263,8 @@ contract EventManager {
         }
 
         payable(eventInstance.owner).transfer(eventInstance.cashBank);
+        eventInstance.cashBank = 0;
+        eventInstance.isFinalized = true;
     }
 
     function calculateAverageRating(uint _eventId, uint _taskId) public view returns (uint8) {

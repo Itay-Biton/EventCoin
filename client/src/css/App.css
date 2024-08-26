@@ -1,0 +1,72 @@
+/* General app styles */
+.app {
+  font-family: Arial, sans-serif;
+  padding: 1rem;
+  background-color: #f4f4f9;
+  color: #333;
+  min-height: 100vh; /* Ensure it takes up the full viewport height */
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center content horizontally */
+  justify-content: center; /* Center content vertically */
+  text-align: center; /* Center text */
+}
+
+.app h1 {
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  color: #333;
+}
+
+.app button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.app button:hover {
+  background-color: #45a049;
+}
+
+.app input[type="radio"] {
+  margin-right: 0.5rem;
+}
+
+.app label {
+  margin-right: 1rem;
+}
+
+.app .event-list {
+  margin-top: 1rem;
+}
+
+.app .event-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.app .event-list li {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.app .event-list li:hover {
+  background-color: #f0f0f0;
+}
+
+.user-type-container {
+  display: flex;
+  gap: 1rem; /* Space between the radio buttons and labels */
+  margin-bottom: 1rem;
+}
+
+.user-type-container label {
+  margin-left: 0.5rem; /* Space between the radio button and label */
+}

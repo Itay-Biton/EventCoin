@@ -1,29 +1,29 @@
-import Web3 from "web3";
+import Web3 from 'web3';
 
-const getWeb3 = () =>
-  new Promise((resolve, reject) => {
-    window.addEventListener("load", async () => {
-      if (window.ethereum) {
-        const web3 = new Web3(window.ethereum);
-        try {
-          await window.ethereum.enable();
-          resolve(web3);
-        } catch (error) {
-          reject(error);
-        }
-      } else if (window.web3) {
-        const web3 = window.web3;
-        console.log("Injected web3 detected.");
-        resolve(web3);
-      } else {
-        const provider = new Web3.providers.HttpProvider(
-          "http://127.0.0.1:7545"
-        );
-        const web3 = new Web3(provider);
-        console.log("No web3 instance injected, using Local web3.");
-        resolve(web3);
-      }
-    });
-  });
+const getWeb3 = async () => {
+  try {
+    // Check for injected Web3 (MetaMask)
+    if (window.ethereum) {
+      const web3Injected = new Web3(window.ethereum);
+      await window.ethereum.request({ method: 'eth_requestAccounts' }); // Request account access
+      console.log('Injected web3 detected.');
+      return web3Injected;
+    } else if (window.web3) {
+      // Legacy dapp browsers (less common)
+      const web3Legacy = window.web3;
+      console.log('Injected web3 detected (legacy).');
+      return web3Legacy;
+    } else {
+      // No injected web3 instance is detected, fall back to Ganache
+      const localProvider = new Web3.providers.HttpProvider('http://127.0.0.1:8888');
+      const web3Local = new Web3(localProvider);
+      console.log('Using Ganache provider.');
+      return web3Local;
+    }
+  } catch (error) {
+    console.error('Error obtaining web3:', error);
+    throw error; // Re-throw the error for handling in the calling code
+  }
+};
 
 export default getWeb3;
