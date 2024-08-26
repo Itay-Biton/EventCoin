@@ -60,7 +60,7 @@ contract TicketNFT is ERC721URIStorage {
             '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200">',
             '<rect width="100%" height="100%" fill="#4CAF50" />',
             '<text x="10" y="20" font-size="20" fill="white">Event: ', _eventName, '</text>',
-            '<text x="10" y="50" font-size="16" fill="white">Date: ', uint2str(_eventDate), '</text>',
+            '<text x="10" y="50" font-size="16" fill="white">Timestamp: ', uint2str(_eventDate), '</text>',
             '<text x="10" y="80" font-size="16" fill="white">Seat: ', uint2str(_seat), '</text>',
             '</svg>'
         ));

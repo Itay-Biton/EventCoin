@@ -36,7 +36,7 @@ function TicketNFTDisplay({ tokenId }) {
       <p>{metadata.description}</p>
       <ul>
         <li><strong>Event Name:</strong> {metadata.eventName}</li>
-        <li><strong>Date:</strong> {metadata.date}</li>
+        <li><strong>Date:</strong> {new Date(Number(metadata.date) * 1000).toLocaleDateString('en-GB')}</li>
         <li><strong>Details:</strong> {metadata.details}</li>
         <li><strong>Seat:</strong> {metadata.seat}</li>
       </ul>
