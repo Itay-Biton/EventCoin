@@ -34,6 +34,19 @@ EventCoin is a decentralized application (dApp) for managing events using NFTs a
 - **Reward Distribution**: Companies receive rewards based on their performance and the average rating of their completed tasks.
 
 
+## Screenshots
+
+<p align="center">
+   <img src="./Screenshots/Screenshot1" alt="Screenshot 1" width="200"/> 
+   <img src="./Screenshots/Screenshot2" alt="Screenshot 2" width="200"/> 
+   <img src="./Screenshots/Screenshot3" alt="Screenshot 3" width="200"/> 
+   <img src="./Screenshots/Screenshot4" alt="Screenshot 4" width="200"/> 
+   <img src="./Screenshots/Screenshot5" alt="Screenshot 5" width="200"/> 
+   <img src="./Screenshots/Screenshot6" alt="Screenshot 6" width="200"/> 
+   <img src="./Screenshots/Screenshot7" alt="Screenshot 7" width="200"/> 
+</p>
+
+
 ## Requirements
 
 - [Truffle](https://www.trufflesuite.com/truffle)
